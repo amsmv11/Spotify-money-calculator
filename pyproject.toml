@@ -1,0 +1,14 @@
+[project]
+name = "spotify-money-calculator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dotenv>=0.9.9",
+    "fastapi>=0.123.5",
+    "httpx>=0.28.1",
+    "pydantic>=2.12.5",
+    "ruff>=0.14.7",
+    "uvicorn>=0.38.0",
+]

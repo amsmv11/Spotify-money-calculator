@@ -11,7 +11,7 @@ load_dotenv()
 router = APIRouter()
 
 
-class SpotifyCredentials(BaseModel):
+class SpotifyAppCredentials(BaseModel):
     client_id: str = "bc41d365e31a491fa21d707e75072740"
     client_secret: str = "b68e5950da074f359ca1ca0b7ab57c36"
     state: str = "thisarandomstate"
@@ -19,6 +19,14 @@ class SpotifyCredentials(BaseModel):
 
     class Config:
         env_prefix = "SPOTIFY_"
+
+class SpotifyUserCredentials(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: str
+    scope: str
+    
 
 
 @router.get("/")
@@ -28,7 +36,7 @@ async def root():
 
 @router.get("/login")
 async def login():
-    spotify_credentials = SpotifyCredentials()
+    spotify_credentials = SpotifyAppCredentials()
     redirect_url = "https://f8fff8a5d3e0.ngrok.app/api/v0/spotify/callback"
 
     return RedirectResponse(
@@ -41,7 +49,7 @@ async def login():
 
 @router.get("/callback")
 async def callback(code: str, state: str):
-    spotify_credentials = SpotifyCredentials()
+    spotify_credentials = SpotifyAppCredentials()
     redirect_url = "https://f8fff8a5d3e0.ngrok.app/api/v0/spotify/callback"
     if state != spotify_credentials.state:
         return Response("State Mismatch", status_code=403)
@@ -74,9 +82,6 @@ async def callback(code: str, state: str):
                 f"Spotify returned this -- {str(e)}", status_code=response.status_code
             )
 
-        return "OAuth Flow completed successfuly"
+        user_credentials = SpotifyUserCredentials(**response.json())
 
-
-"""
-{"access_token":"BQBgr3JAxP9YNiB7ZJY5JXD6kZCNuBXZR1YFPbW_hn1Xt9YwRFYz4W0bMHD8L0KBYyj85-VYlnKwwGD1c8u1YQhyGOMoehBhbYPQN7_mZta11BlHsArI3EJw7zlI46BLzuuLhNwSSYJCZHgBNWVdXA736b0Z9IBahXbrhuxQS8WL9OG8TCxYN01ywJCTEtAvBdNa9CeXV8TIEbG3qJnTO-SNkfnK9S6_6kMmlNxHeA","token_type":"Bearer","expires_in":3600,"refresh_token":"AQA1uxqRXMCSqdtG7rcJR24h9GXNntgeqMVosmDWQaJ4S4G3QzhmMr_zc-ewOEGRBt91uf5Ac4148STlMTPvSJI2rkir9zkS_fM6sFm3ALI9RxRRBBACUYo9pnptA2bBdXo","scope":"user-read-email user-read-private"}
-"""
+        return f"OAuth Flow completed successfuly {user_credentials}"

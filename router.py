@@ -13,10 +13,11 @@ router = APIRouter()
 
 
 class SpotifyAppCredentials(BaseModel):
-    client_id: str = "bc41d365e31a491fa21d707e75072740"
-    client_secret: str = "b68e5950da074f359ca1ca0b7ab57c36"
-    state: str = "thisarandomstate"
-    scope: str = "user-read-private user-read-email"
+    client_id: str
+    client_secret: str
+    state: str 
+    scope: str
+    redirect_url: str
 
     class Config:
         env_prefix = "SPOTIFY_"
@@ -38,12 +39,11 @@ async def root():
 @router.get("/login")
 async def login():
     spotify_credentials = SpotifyAppCredentials()
-    redirect_url = "https://f8fff8a5d3e0.ngrok.app/api/v0/spotify/callback"
 
     return RedirectResponse(
         f"https://accounts.spotify.com/authorize?"
         f"response_type=code&client_id={spotify_credentials.client_id}&"
-        f"scope={spotify_credentials.scope}&redirect_uri={redirect_url}&"
+        f"scope={spotify_credentials.scope}&redirect_uri={spotify_credentials.redirect_url}&"
         f"state={spotify_credentials.state}"
     )
 
@@ -51,7 +51,7 @@ async def login():
 @router.get("/callback")
 async def callback(code: str, state: str):
     spotify_credentials = SpotifyAppCredentials()
-    redirect_url = "https://f8fff8a5d3e0.ngrok.app/api/v0/spotify/callback"
+    
     if state != spotify_credentials.state:
         return Response("State Mismatch", status_code=403)
 
@@ -70,7 +70,7 @@ async def callback(code: str, state: str):
             data={
                 "code": code,
                 "grant_type": "authorization_code",
-                "redirect_uri": redirect_url,
+                "redirect_uri": spotify_credentials.redirect_url,
             },
         )
 

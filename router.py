@@ -1,6 +1,7 @@
 import base64
 from pathlib import Path
 from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 from fastapi import APIRouter, Response
 from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 from httpx import AsyncClient
@@ -12,10 +13,10 @@ load_dotenv()
 router = APIRouter()
 
 
-class SpotifyAppCredentials(BaseModel):
+class SpotifyAppCredentials(BaseSettings):
     client_id: str
     client_secret: str
-    state: str 
+    state: str
     scope: str
     redirect_url: str
 
@@ -51,7 +52,7 @@ async def login():
 @router.get("/callback")
 async def callback(code: str, state: str):
     spotify_credentials = SpotifyAppCredentials()
-    
+
     if state != spotify_credentials.state:
         return Response("State Mismatch", status_code=403)
 
@@ -79,10 +80,10 @@ async def callback(code: str, state: str):
         except BaseException as e:
             error_template_path = Path("static/error.html")
             error_html = error_template_path.read_text()
-            
+
             error_html = error_html.replace("{status_code}", str(response.status_code))
             error_html = error_html.replace("{error_message}", str(e))
-            
+
             return HTMLResponse(content=error_html, status_code=response.status_code)
 
         user_credentials = SpotifyUserCredentials(**response.json())

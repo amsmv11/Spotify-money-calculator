@@ -1,7 +1,7 @@
 import base64
 from pydantic import BaseModel
 from fastapi import APIRouter, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from httpx import AsyncClient
 from dotenv import load_dotenv
 
@@ -20,18 +20,18 @@ class SpotifyAppCredentials(BaseModel):
     class Config:
         env_prefix = "SPOTIFY_"
 
+
 class SpotifyUserCredentials(BaseModel):
     access_token: str
     token_type: str
     expires_in: int
     refresh_token: str
     scope: str
-    
 
 
 @router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return FileResponse("static/index.html")
 
 
 @router.get("/login")

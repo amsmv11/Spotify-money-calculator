@@ -1,7 +1,8 @@
 import base64
+from pathlib import Path
 from pydantic import BaseModel
 from fastapi import APIRouter, Response
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, HTMLResponse
 from httpx import AsyncClient
 from dotenv import load_dotenv
 
@@ -55,7 +56,6 @@ async def callback(code: str, state: str):
         return Response("State Mismatch", status_code=403)
 
     async with AsyncClient() as client:
-        # Build the Basic Auth header value
         auth_string = (
             f"{spotify_credentials.client_id}:{spotify_credentials.client_secret}"
         )
@@ -65,7 +65,6 @@ async def callback(code: str, state: str):
         response = await client.post(
             url="https://accounts.spotify.com/api/token",
             headers={
-                # "content-type": "application/x-www-form-urlencoded",
                 "Authorization": f"Basic {auth_base64}",
             },
             data={
@@ -78,9 +77,13 @@ async def callback(code: str, state: str):
         try:
             response.raise_for_status()
         except BaseException as e:
-            return Response(
-                f"Spotify returned this -- {str(e)}", status_code=response.status_code
-            )
+            error_template_path = Path("static/error.html")
+            error_html = error_template_path.read_text()
+            
+            error_html = error_html.replace("{status_code}", str(response.status_code))
+            error_html = error_html.replace("{error_message}", str(e))
+            
+            return HTMLResponse(content=error_html, status_code=response.status_code)
 
         user_credentials = SpotifyUserCredentials(**response.json())
 

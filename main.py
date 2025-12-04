@@ -10,7 +10,7 @@ def create_app():
     version_router.include_router(router, prefix="/spotify", tags=["spotify"])
 
     app.include_router(version_router, prefix="/api/v0")
-    app.add_api_route('/', endpoint=root)
+    app.add_api_route("/", endpoint=root)
 
     return app
 

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error - Spotify Money Calculator 💿💰</title>
+    <meta http-equiv="refresh" content="3;url=/">
+    <title>Success - Spotify Money Calculator 💿💰</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +14,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -43,21 +44,26 @@
             }
         }
 
-        .error-icon {
+        .success-icon {
             font-size: 5em;
             margin-bottom: 20px;
-            animation: shake 0.5s ease-out;
+            animation: bounceIn 0.8s ease-out;
         }
 
-        @keyframes shake {
-            0%, 100% {
-                transform: translateX(0);
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
             }
-            25% {
-                transform: translateX(-10px);
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
             }
-            75% {
-                transform: translateX(10px);
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
             }
         }
 
@@ -69,14 +75,14 @@
             line-height: 1.2;
         }
 
-        .error-code {
-            font-size: 1.5em;
-            color: #e53e3e;
+        .success-message {
+            font-size: 1.3em;
+            color: #1db954;
             margin-bottom: 20px;
             font-weight: 700;
         }
 
-        .error-message {
+        .description {
             font-size: 1.1em;
             color: #4a5568;
             line-height: 1.6;
@@ -84,30 +90,35 @@
             padding: 0 20px;
         }
 
-        .error-details {
+        .redirect-info {
             background: #f7fafc;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 30px;
-            border-left: 4px solid #e53e3e;
+            border-left: 4px solid #1db954;
         }
 
-        .error-details h3 {
+        .redirect-info p {
             color: #2d3748;
             font-size: 1.1em;
             margin-bottom: 10px;
-            text-align: left;
         }
 
-        .error-details p {
-            color: #718096;
-            font-size: 0.95em;
-            text-align: left;
-            word-break: break-word;
-            font-family: 'Courier New', monospace;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
+        .countdown {
+            font-size: 3em;
+            font-weight: 800;
+            color: #1db954;
+            margin: 10px 0;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
         }
 
         .button-group {
@@ -143,17 +154,6 @@
             background: linear-gradient(135deg, #1ed760 0%, #1db954 100%);
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-
         .btn:active {
             transform: translateY(-1px);
         }
@@ -173,11 +173,11 @@
                 font-size: 2em;
             }
 
-            .error-code {
-                font-size: 1.3em;
+            .success-message {
+                font-size: 1.1em;
             }
 
-            .error-message {
+            .description {
                 font-size: 1em;
                 padding: 0 10px;
             }
@@ -187,40 +187,53 @@
                 font-size: 1em;
             }
 
-            .error-icon {
+            .success-icon {
                 font-size: 4em;
             }
 
-            .button-group {
-                flex-direction: column;
-                align-items: stretch;
+            .countdown {
+                font-size: 2.5em;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="error-icon">⚠️</div>
-        <h1>Oops! Something Went Wrong</h1>
-        <div class="error-code">Error Code: {{ status_code }}</div>
-        <p class="error-message">
-            We encountered an issue while trying to authenticate with Spotify. 
-            Don't worry, this happens sometimes. Please try again!
+        <div class="success-icon">✅</div>
+        <h1>Success!</h1>
+        <div class="success-message">You've been successfully authenticated with Spotify!</div>
+        <p class="description">
+            Your Spotify account is now connected and ready to use. 
+            Let's calculate how much money your listening is worth! 💰
         </p>
         
-        <div class="error-details">
-            <h3>Technical Details:</h3>
-            <p>{{ error_message }}</p>
+        <div class="redirect-info">
+            <p>Redirecting to home in:</p>
+            <div class="countdown" id="countdown">5</div>
         </div>
 
         <div class="button-group">
-            <a href="/api/v0/spotify/login" class="btn btn-primary">Try Again</a>
-            <a href="/api/v0/spotify" class="btn btn-secondary">Go Home</a>
+            <a href="/" class="btn btn-primary">Go to Home Now</a>
         </div>
         
         <div class="footer">
-            <p>💿 If this problem persists, please check your Spotify credentials 💰</p>
+            <p>💿 Ready to see your Spotify money stats? 💰</p>
         </div>
     </div>
+
+    <script>
+        let timeLeft = 5;
+        const countdownElement = document.getElementById('countdown');
+        
+        const timer = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                window.location.href = '/';
+            }
+        }, 1000);
+    </script>
 </body>
 </html>

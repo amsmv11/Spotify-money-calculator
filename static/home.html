@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Spotify Money Calculator 💿💰</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .welcome-message {
+            font-size: 1.3em;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3);
+        }
+
+        .info-box {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .info-box h3 {
+            color: #2d3748;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .info-box p {
+            color: #718096;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .coming-soon {
+            color: #ed8936;
+            font-weight: 600;
+            font-size: 1.2em;
+            margin-top: 15px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #a0aec0;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 25px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .welcome-message {
+                font-size: 1.1em;
+            }
+
+            .logo {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💿💰</div>
+        <h1>Welcome, {{ display_name }}!</h1>
+        <div class="status-badge">✓ Authenticated</div>
+        <p class="welcome-message">Hello {{ username }}, you're successfully connected to Spotify</p>
+        
+        <div class="info-box">
+            <h3>Your Dashboard</h3>
+            <p>
+                Your personalized dashboard with detailed information about your Spotify library 
+                and physical media cost calculations will be displayed here.
+            </p>
+            <p class="coming-soon">🚧 Coming Soon 🚧</p>
+        </div>
+
+        <div class="footer">
+            <p>🎵 Stay tuned for more features! 🎵</p>
+        </div>
+    </div>
+</body>
+</html>

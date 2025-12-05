@@ -5,11 +5,13 @@ from fastapi.templating import Jinja2Templates
 from httpx import AsyncClient
 from dotenv import load_dotenv
 from values.spotify_values import (
+    SpotifyAlbumListItem,
+    SpotifyAlbumListResponse,
     SpotifyAppCredentials,
     SpotifyUser,
     SpotifyUserCredentials,
 )
-from typing import Optional
+from typing import List, Optional
 
 load_dotenv()
 
@@ -141,3 +143,46 @@ async def validate_access_token(access_token: str) -> Optional[SpotifyUser]:
             return SpotifyUser(**response.json())
         except Exception:
             return None
+
+
+async def get_user_saved_albums(
+    request: Request, limit: int = 50
+) -> Optional[List[SpotifyAlbumListItem]]:
+    access_token = request.cookies.get("spotify_access_token")
+    if not access_token:
+        return login()
+
+    async with AsyncClient() as client:
+        try:
+            if limit == -1:
+                res = []
+                url = "https://api.spotify.com/v1/me/albums?limit=50"
+
+                while url != "":
+                    response = await client.get(
+                        url=url,
+                        headers={
+                            "Authorization": f"Bearer {access_token}",
+                        },
+                    )
+
+                    response.raise_for_status()
+                    list_response = SpotifyAlbumListResponse(**response.json())
+                    res += list_response.items
+                    url = list_response.next if list_response.next else ""
+                return res
+
+            else:
+                response = await client.get(
+                    url=f"https://api.spotify.com/v1/me/albums?limit={limit}",
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                    },
+                )
+
+                response.raise_for_status()
+
+                return SpotifyAlbumListResponse(**response.json()).items
+
+        except Exception:
+            return login()

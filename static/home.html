@@ -101,6 +101,94 @@
             margin-top: 15px;
         }
 
+        .albums-section {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .albums-section h3 {
+            color: #2d3748;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .albums-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .album-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .album-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .album-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .album-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .album-title {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .album-artist {
+            color: #718096;
+            font-size: 0.95em;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .album-release {
+            color: #a0aec0;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            color: #718096;
+            font-size: 1.1em;
+            padding: 20px;
+        }
+
+        .error {
+            text-align: center;
+            color: #e53e3e;
+            font-size: 1.1em;
+            padding: 20px;
+        }
+
         .footer {
             margin-top: 30px;
             color: #a0aec0;
@@ -123,6 +211,55 @@
             .logo {
                 font-size: 3em;
             }
+
+            .albums-section {
+                padding: 20px;
+            }
+
+            .album-item {
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .album-image {
+                width: 60px;
+                height: 60px;
+            }
+
+            .album-title {
+                font-size: 1em;
+            }
+
+            .album-artist {
+                font-size: 0.85em;
+            }
+
+            .album-release {
+                font-size: 0.8em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .album-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .album-image {
+                width: 100%;
+                max-width: 200px;
+                height: auto;
+                aspect-ratio: 1;
+            }
+
+            .album-info {
+                width: 100%;
+            }
+
+            .album-title,
+            .album-artist {
+                white-space: normal;
+            }
         }
     </style>
 </head>
@@ -142,9 +279,86 @@
             <p class="coming-soon">🚧 Coming Soon 🚧</p>
         </div>
 
+        <div class="albums-section">
+            <h3>🎵 Your Recent Albums</h3>
+            <div id="albums-container" class="albums-container">
+                <div class="loading">Loading your albums...</div>
+            </div>
+        </div>
+
         <div class="footer">
             <p>🎵 Stay tuned for more features! 🎵</p>
         </div>
     </div>
+
+    <script>
+        // Fetch user albums when page loads
+        async function fetchUserAlbums() {
+            const container = document.getElementById('albums-container');
+            
+            try {
+                const response = await fetch(`${window.location.origin}/api/v0/spotify/user_albums?limit=5`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch albums');
+                }
+                
+                const data = await response.json();
+                
+                // Clear loading message
+                container.innerHTML = '';
+                
+                // Check if we have albums (data is an array, not an object with items property)
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="loading">No albums found in your library.</div>';
+                    return;
+                }
+                
+                // Display each album
+                data.forEach(item => {
+                    const album = item.album;
+                    const albumElement = createAlbumElement(album);
+                    container.appendChild(albumElement);
+                });
+                
+            } catch (error) {
+                console.error('Error fetching albums:', error);
+                container.innerHTML = '<div class="error">Failed to load albums. Please try again later.</div>';
+            }
+        }
+        
+        // Create album element
+        function createAlbumElement(album) {
+            const albumDiv = document.createElement('div');
+            albumDiv.className = 'album-item';
+            
+            // Get album image (use the medium size if available)
+            const imageUrl = album.images && album.images.length > 0 
+                ? album.images[0].url 
+                : 'https://via.placeholder.com/80?text=No+Image';
+            
+            // Get artist names
+            const artists = album.artists && album.artists.length > 0
+                ? album.artists.map(artist => artist.name).join(', ')
+                : 'Unknown Artist';
+            
+            // Format release date
+            const releaseDate = album.release_date || 'Unknown';
+            
+            albumDiv.innerHTML = `
+                <img src="${imageUrl}" alt="${album.name}" class="album-image">
+                <div class="album-info">
+                    <div class="album-title">${album.name}</div>
+                    <div class="album-artist">${artists}</div>
+                    <div class="album-release">Released: ${releaseDate}</div>
+                </div>
+            `;
+            
+            return albumDiv;
+        }
+        
+        // Load albums when page loads
+        window.addEventListener('DOMContentLoaded', fetchUserAlbums);
+    </script>
 </body>
 </html>

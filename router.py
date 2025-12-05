@@ -17,3 +17,8 @@ async def login():
 @router.get("/callback")
 async def callback(request: Request, code: str, state: str):
     return await spotify_gateway.callback(request=request, code=code, state=state)
+
+
+@router.get("/user_albums")
+async def user_albums(request: Request, limit: int):
+    return await spotify_gateway.get_user_saved_albums(request=request, limit=limit)

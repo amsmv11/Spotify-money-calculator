@@ -6,12 +6,22 @@ Ever wondered how much money you'd need to buy all your favorite Spotify songs o
 
 ## 🎯 Project Status
 
-Currently in early development! The project currently implements:
-- ✅ Spotify OAuth authentication flow
+The project is now functional with core features implemented! 
+
+### What's Working:
+- ✅ Spotify OAuth authentication flow with cookie-based session management
 - ✅ FastAPI-based REST API
-- 🚧 Liked songs retrieval (in progress)
-- 🚧 Cost calculation engine (planned)
-- 🚧 Physical format pricing (planned)
+- ✅ User saved albums retrieval with pagination support
+- ✅ **Discogs API integration for physical album pricing**
+- ✅ **Cost calculation engine for CD prices**
+- ✅ **Interactive web frontend with album display**
+- ✅ Real-time price aggregation and summary
+
+### What's Next:
+- 🚧 Vinyl and cassette pricing options
+- 🚧 Full liked songs (tracks) retrieval
+- 🚧 Enhanced price accuracy and search results
+- 🚧 Export functionality (PDF, CSV)
 
 ## 🛠️ Tech Stack
 
@@ -21,6 +31,8 @@ Currently in early development! The project currently implements:
 - **Validation**: [Pydantic](https://docs.pydantic.dev/) - Data validation and settings management
 - **Server**: [Uvicorn](https://www.uvicorn.org/) - Lightning-fast ASGI server
 - **Package Manager**: [uv](https://github.com/astral-sh/uv) - Fast Python package installer
+- **Pricing API**: [Discogs API](https://www.discogs.com/developers/) - Physical music marketplace data
+- **Template Engine**: [Jinja2](https://jinja.palletsprojects.com/) - HTML templating
 
 ## 📋 Prerequisites
 
@@ -29,6 +41,7 @@ Before you begin, ensure you have the following installed:
 - **Python 3.13** or higher
 - **uv** package manager ([installation guide](https://github.com/astral-sh/uv))
 - **Spotify Developer Account** - Create one at [developer.spotify.com](https://developer.spotify.com/)
+- **Discogs Developer Account** - Create one at [discogs.com/developers](https://www.discogs.com/developers/)
 
 ## 🚀 Installation
 
@@ -51,6 +64,8 @@ Before you begin, ensure you have the following installed:
    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
    SPOTIFY_REDIRECT_URI=your_redirect_uri
    SPOTIFY_STATE=your_random_state_string
+   SPOTIFY_SCOPE=user-library-read
+   DISCOGS_ACCESS_TOKEN=your_discogs_personal_access_token
    ```
 
 ## ⚙️ Configuration
@@ -61,7 +76,14 @@ Before you begin, ensure you have the following installed:
 2. Create a new application
 3. Copy your **Client ID** and **Client Secret**
 4. Add your redirect URI to the app settings (e.g., `http://localhost:8888/api/v0/spotify/callback`)
-5. Update the redirect URL in `router.py` or use environment variables
+5. Make sure to request the `user-library-read` scope to access saved albums
+
+### Discogs API Setup
+
+1. Go to [Discogs Developer Settings](https://www.discogs.com/settings/developers)
+2. Generate a **Personal Access Token**
+3. Copy the token to your `.env` file as `DISCOGS_ACCESS_TOKEN`
+4. This token allows the app to search for album prices in the Discogs marketplace
 
 ### Environment Variables
 
@@ -71,7 +93,8 @@ Before you begin, ensure you have the following installed:
 | `SPOTIFY_CLIENT_SECRET` | Your Spotify app client secret | Yes |
 | `SPOTIFY_REDIRECT_URI` | OAuth callback URL | Yes |
 | `SPOTIFY_STATE` | Random string for OAuth state verification | Yes |
-| `SPOTIFY_SCOPE` | Spotify API scopes (default: `user-read-private user-read-email`) | No |
+| `SPOTIFY_SCOPE` | Spotify API scopes (e.g., `user-library-read`) | Yes |
+| `DISCOGS_ACCESS_TOKEN` | Your Discogs personal access token | Yes |
 
 ## 🎮 Usage
 
@@ -86,11 +109,11 @@ The API will be available at `http://localhost:8888`
 
 ### API Endpoints
 
-#### Health Check
+#### Home Page
 ```
 GET /api/v0/spotify/
 ```
-Returns a simple "Hello World" message to verify the API is running.
+Returns the home page. If authenticated, shows user's albums and prices. Otherwise, shows landing page.
 
 #### Initiate Spotify Login
 ```
@@ -102,17 +125,64 @@ Redirects to Spotify's OAuth authorization page. Users will be asked to grant pe
 ```
 GET /api/v0/spotify/callback?code={code}&state={state}
 ```
-Handles the OAuth callback from Spotify. Exchanges the authorization code for an access token.
+Handles the OAuth callback from Spotify. Exchanges the authorization code for an access token and sets secure cookies.
 
-**Response**: Returns `"OAuth Flow completed successfully"` on success.
+**Response**: Returns success page and sets httponly cookies for session management.
+
+#### Get User's Saved Albums
+```
+GET /api/v0/spotify/user_albums?limit={limit}
+```
+Retrieves the authenticated user's saved albums from Spotify.
+
+**Parameters**:
+- `limit` (int): Number of albums to fetch. Use `-1` to fetch all albums with pagination.
+
+**Response**: JSON array of album objects with metadata (name, artist, release date, artwork, etc.)
+
+#### Calculate Album Prices
+```
+POST /api/v0/spotify/get_albums_price
+```
+Calculates the cost of purchasing albums physically based on Discogs marketplace data.
+
+**Request Body**:
+```json
+{
+  "albums": [
+    {
+      "artist": "Artist Name",
+      "album_name": "Album Title"
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "albums_with_price": [
+    {
+      "artist": "Artist Name",
+      "album_name": "Album Title",
+      "price": 12.50,
+      "valid": true
+    }
+  ],
+  "total": 12.50,
+  "currency": "EUR"
+}
+```
 
 ### Example Flow
 
 1. Start the server: `make run`
-2. Navigate to: `http://localhost:8888/api/v0/spotify/login`
-3. Authorize the application in Spotify
-4. Get redirected back to the callback endpoint
-5. Access token is retrieved (ready for future API calls)
+2. Navigate to: `http://localhost:8888/api/v0/spotify/`
+3. Click the login button to authorize with Spotify
+4. Grant permissions to access your library
+5. Get redirected to the home page showing your albums
+6. View your album collection with images and calculated CD prices
+7. See the total cost of your collection in EUR
 
 ## 🔧 Development
 
@@ -139,23 +209,28 @@ Run `make check` before committing to ensure code quality.
 
 ## 🗺️ Roadmap
 
-### Phase 1: Data Collection ✅ (In Progress)
+### Phase 1: Data Collection ✅ Completed
 - [x] Spotify OAuth authentication
-- [ ] Fetch user's liked songs
-- [ ] Retrieve song metadata (artist, album, year)
-- [ ] Handle pagination for large collections
+- [x] Fetch user's saved albums
+- [x] Retrieve album metadata (artist, album, year, artwork)
+- [x] Handle pagination for large collections
 
-### Phase 2: Cost Calculation Engine
-- [ ] Define physical format types (CD, Vinyl, Cassette)
-- [ ] Integrate pricing APIs or databases
-- [ ] Calculate costs per song/album
-- [ ] Aggregate total collection cost
+### Phase 2: Cost Calculation Engine ✅ Completed
+- [x] Define physical format types (CD implemented, Vinyl/Cassette planned)
+- [x] Integrate Discogs API for pricing data
+- [x] Calculate costs per album based on marketplace data
+- [x] Aggregate total collection cost
+- [x] Intelligent price selection based on condition quality
 - [ ] Handle special cases (compilations, box sets)
 
-### Phase 3: User Experience
-- [ ] Web frontend for results visualization
-- [ ] Breakdown by format type
-- [ ] Breakdown by artist/album
+### Phase 3: User Experience ✅ In Progress
+- [x] Web frontend for results visualization
+- [x] Display albums with artwork and metadata
+- [x] Breakdown by individual album with prices
+- [x] Total cost calculation and display
+- [x] Responsive design for mobile and desktop
+- [ ] Breakdown by format type (CD/Vinyl/Cassette selector)
+- [ ] Breakdown by artist/genre statistics
 - [ ] Cost comparisons (streaming vs. physical)
 - [ ] Export reports (PDF, CSV)
 
@@ -169,13 +244,25 @@ Run `make check` before committing to ensure code quality.
 
 ```
 spotify_money_calculator/
-├── main.py              # Application entry point
-├── router.py            # API routes and Spotify OAuth logic
-├── pyproject.toml       # Project metadata and dependencies
-├── Makefile            # Development commands
-├── .env                # Environment variables (not in repo)
-├── .gitignore          # Git ignore rules
-└── README.md           # This file
+├── main.py                      # Application entry point
+├── router.py                    # API routes
+├── pyproject.toml              # Project metadata and dependencies
+├── Makefile                    # Development commands
+├── .env                        # Environment variables (not in repo)
+├── .gitignore                  # Git ignore rules
+├── README.md                   # This file
+├── gateways/                   # External API integrations
+│   ├── spotify_gateway.py      # Spotify API client and OAuth
+│   ├── discogs_gateway.py      # Discogs API client and pricing
+│   └── app_values.py           # Shared data models
+├── values/                     # Pydantic models and settings
+│   ├── spotify_values.py       # Spotify data models
+│   └── discogs_values.py       # Discogs data models
+└── static/                     # Frontend templates
+    ├── index.html              # Landing page
+    ├── home.html               # Authenticated user home page
+    ├── error.html              # Error page
+    └── spotify_oauth_success.html  # OAuth success page
 ```
 
 ## 🤝 Contributing

@@ -4,6 +4,7 @@ from fastapi import APIRouter, FastAPI
 
 def create_app():
     app = FastAPI()
+
     from router import router, root
 
     version_router = APIRouter()

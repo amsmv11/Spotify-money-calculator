@@ -105,6 +105,7 @@ async def callback(request: Request, code: str, state: str):
         html_response.set_cookie(
             key="spotify_access_token",
             value=user_credentials.access_token,
+            max_age=user_credentials.expires_in,
             httponly=True,
             secure=True,
             samesite="lax",
@@ -113,13 +114,19 @@ async def callback(request: Request, code: str, state: str):
         html_response.set_cookie(
             key="spotify_refresh_token",
             value=user_credentials.refresh_token,
+            max_age=60 * 60 * 24 * 30,  # 30 days
             httponly=True,
             secure=True,
             samesite="lax",
         )
 
         html_response.set_cookie(
-            key="spotify_expires_in", value=str(user_credentials.expires_in)
+            key="spotify_expires_in",
+            value=str(user_credentials.expires_in),
+            max_age=user_credentials.expires_in,
+            httponly=True,
+            secure=True,
+            samesite="lax",
         )
 
         return html_response

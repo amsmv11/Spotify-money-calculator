@@ -175,6 +175,86 @@
             font-size: 0.9em;
         }
 
+        .album-price {
+            margin-top: 8px;
+            font-weight: 700;
+            font-size: 1em;
+        }
+
+        .price-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .price-valid {
+            background: linear-gradient(135deg, #1db954 0%, #1ed760 100%);
+            color: white;
+            box-shadow: 0 2px 5px rgba(29, 185, 84, 0.3);
+        }
+
+        .price-not-found {
+            background: #e2e8f0;
+            color: #718096;
+        }
+
+        .price-summary {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .price-summary h3 {
+            color: #2d3748;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .price-table {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .price-row:last-child {
+            border-bottom: none;
+        }
+
+        .price-row-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 1.3em;
+            margin-top: 15px;
+        }
+
+        .price-album-name {
+            flex: 1;
+            font-weight: 600;
+            color: #2d3748;
+            margin-right: 15px;
+        }
+
+        .price-value {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
         .loading {
             text-align: center;
             color: #718096;
@@ -270,20 +350,16 @@
         <div class="status-badge">✓ Authenticated</div>
         <p class="welcome-message">Hello {{ username }}, you're successfully connected to Spotify</p>
         
-        <div class="info-box">
-            <h3>Your Dashboard</h3>
-            <p>
-                Your personalized dashboard with detailed information about your Spotify library 
-                and physical media cost calculations will be displayed here.
-            </p>
-            <p class="coming-soon">🚧 Coming Soon 🚧</p>
-        </div>
-
         <div class="albums-section">
-            <h3>🎵 Your Recent Albums</h3>
+            <h3>🎵 Your Recent Saved Albums</h3>
             <div id="albums-container" class="albums-container">
                 <div class="loading">Loading your albums...</div>
             </div>
+        </div>
+
+        <div id="price-summary-section" class="price-summary" style="display: none;">
+            <h3>💰 Physical Albums Cost Summary</h3>
+            <div class="loading">Calculating prices...</div>
         </div>
 
         <div class="footer">
@@ -292,6 +368,9 @@
     </div>
 
     <script>
+        // Store album data globally to reference later
+        let albumsData = [];
+        
         // Fetch user albums when page loads
         async function fetchUserAlbums() {
             const container = document.getElementById('albums-container');
@@ -314,12 +393,18 @@
                     return;
                 }
                 
+                // Store album data
+                albumsData = data;
+                
                 // Display each album
                 data.forEach(item => {
                     const album = item.album;
                     const albumElement = createAlbumElement(album);
                     container.appendChild(albumElement);
                 });
+                
+                // Now fetch prices for the albums
+                await fetchAlbumsPrices(data);
                 
             } catch (error) {
                 console.error('Error fetching albums:', error);
@@ -331,6 +416,7 @@
         function createAlbumElement(album) {
             const albumDiv = document.createElement('div');
             albumDiv.className = 'album-item';
+            albumDiv.setAttribute('data-album-id', album.id);
             
             // Get album image (use the medium size if available)
             const imageUrl = album.images && album.images.length > 0 
@@ -355,6 +441,114 @@
             `;
             
             return albumDiv;
+        }
+        
+        // Fetch album prices from the API
+        async function fetchAlbumsPrices(albumsData) {
+            const priceSummarySection = document.getElementById('price-summary-section');
+            
+            try {
+                // Show the price summary section
+                priceSummarySection.style.display = 'block';
+                
+                // Prepare request payload
+                const albums = albumsData.map(item => {
+                    const album = item.album;
+                    const artist = album.artists && album.artists.length > 0 
+                        ? album.artists[0].name 
+                        : 'Unknown Artist';
+                    
+                    return {
+                        artist: artist,
+                        album_name: album.name
+                    };
+                });
+                
+                const requestPayload = { albums: albums };
+                
+                // Make POST request to get_albums_price endpoint
+                const response = await fetch(`${window.location.origin}/api/v0/spotify/get_albums_price`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestPayload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch album prices');
+                }
+                
+                const priceData = await response.json();
+                
+                // Update album cards with prices
+                updateAlbumCardsWithPrices(priceData.albums_with_price);
+                
+                // Update price summary section
+                updatePriceSummary(priceData);
+                
+            } catch (error) {
+                console.error('Error fetching album prices:', error);
+                priceSummarySection.innerHTML = '<div class="error">Failed to load album prices. Please try again later.</div>';
+            }
+        }
+        
+        // Update album cards with price badges
+        function updateAlbumCardsWithPrices(albumsWithPrice) {
+            albumsData.forEach((item, index) => {
+                const album = item.album;
+                const albumCard = document.querySelector(`[data-album-id="${album.id}"]`);
+                
+                if (albumCard && albumsWithPrice[index]) {
+                    const priceInfo = albumsWithPrice[index];
+                    const albumInfo = albumCard.querySelector('.album-info');
+                    
+                    // Create price element
+                    const priceDiv = document.createElement('div');
+                    priceDiv.className = 'album-price';
+                    
+                    if (priceInfo.valid) {
+                        priceDiv.innerHTML = `<span class="price-badge price-valid">€${priceInfo.price}</span>`;
+                    } else {
+                        priceDiv.innerHTML = `<span class="price-badge price-not-found">Price not found</span>`;
+                    }
+                    
+                    albumInfo.appendChild(priceDiv);
+                }
+            });
+        }
+        
+        // Update price summary section
+        function updatePriceSummary(priceData) {
+            const priceSummarySection = document.getElementById('price-summary-section');
+            
+            let summaryHTML = '<h3>💰 Physical Albums Cost Summary</h3>';
+            summaryHTML += '<div class="price-table">';
+            
+            priceData.albums_with_price.forEach(album => {
+                const priceDisplay = album.valid 
+                    ? `<span class="price-value" style="color: #1db954;">€${album.price}</span>`
+                    : `<span class="price-value" style="color: #718096;">Not found</span>`;
+                
+                summaryHTML += `
+                    <div class="price-row">
+                        <div class="price-album-name">${album.album_name}</div>
+                        ${priceDisplay}
+                    </div>
+                `;
+            });
+            
+            summaryHTML += '</div>';
+            
+            // Add total row
+            summaryHTML += `
+                <div class="price-row-total">
+                    <div>Total Cost</div>
+                    <div>€${priceData.total}</div>
+                </div>
+            `;
+            
+            priceSummarySection.innerHTML = summaryHTML;
         }
         
         // Load albums when page loads

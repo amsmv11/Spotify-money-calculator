@@ -28,4 +28,4 @@ async def user_albums(request: Request, limit: int):
 
 @router.post("/get_albums_price")
 async def get_albums_price(albums_price_request: AlbumsPriceRequest):
-    return get_price_of_albums(albums_price_request)
+    return await get_price_of_albums(albums_price_request)

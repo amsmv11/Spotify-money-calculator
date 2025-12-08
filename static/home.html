@@ -522,25 +522,8 @@
         function updatePriceSummary(priceData) {
             const priceSummarySection = document.getElementById('price-summary-section');
             
-            let summaryHTML = '<h3>💰 Physical Albums Cost Summary</h3>';
-            summaryHTML += '<div class="price-table">';
-            
-            priceData.albums_with_price.forEach(album => {
-                const priceDisplay = album.valid 
-                    ? `<span class="price-value" style="color: #1db954;">€${album.price}</span>`
-                    : `<span class="price-value" style="color: #718096;">Not found</span>`;
-                
-                summaryHTML += `
-                    <div class="price-row">
-                        <div class="price-album-name">${album.album_name}</div>
-                        ${priceDisplay}
-                    </div>
-                `;
-            });
-            
-            summaryHTML += '</div>';
-            
-            // Add total row
+            let summaryHTML = '<h3>💰 Recent 5 Albums Total Cost</h3>';
+
             summaryHTML += `
                 <div class="price-row-total">
                     <div>Total Cost</div>

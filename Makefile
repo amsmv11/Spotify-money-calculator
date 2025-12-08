@@ -1,5 +1,18 @@
 .PHONY: run format lint lint-fix check help
 
+# Run using docker
+up:
+	docker compose up -d
+
+# Stop docker compose
+stop:
+	docker-compose stop
+
+# Remove docker images 
+clean:
+	docker-compose down --volumes --remove-orphans --rmi local && \
+	docker image prune -f
+
 # Run the application using UV
 run:
 	uv run python main.py

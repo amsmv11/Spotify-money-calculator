@@ -30,22 +30,30 @@ class DiscogsPriceSuggestions(BaseModel):
     class Config:
         validate_by_name = True
 
-    def return_price_based_on_quality_vs_price(self) -> Decimal:
+    def return_price_based_on_quality_vs_price(self) -> float:
         if self.g_plus:
-            return self.g_plus.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            return float(
+                self.g_plus.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            )
 
         if self.vg_plus:
-            return self.vg_plus.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            return float(
+                self.vg_plus.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            )
 
         if self.near_mint:
-            return self.near_mint.value.quantize(
-                Decimal("0.00"), rounding=ROUND_HALF_UP
+            return float(
+                self.near_mint.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
             )
 
         if self.mint:
-            return self.mint.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            return float(
+                self.mint.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            )
 
         if self.vg:
-            return self.vg.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            return float(
+                self.vg.value.quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            )
 
-        return Decimal("0.00")
+        return 0.0

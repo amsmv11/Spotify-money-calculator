@@ -19,5 +19,5 @@ class AlbumsPriceRequest(BaseModel):
 
 class AlbumsPriceResponse(BaseModel):
     albums_with_price: List[AlbumsPriceResponseItem]
-    total: Decimal
+    total: float
     currency: Literal["EUR"]

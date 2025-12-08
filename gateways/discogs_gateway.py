@@ -7,11 +7,8 @@ from gateways.app_values import (
     AlbumsPriceResponse,
     AlbumsPriceResponseItem,
 )
+from services.cache import cache_response
 from values.discogs_values import DiscogsPriceSuggestions, DiscogsSettings
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 def create_discogs_client() -> discogs_client.Client:
@@ -24,7 +21,8 @@ def create_discogs_client() -> discogs_client.Client:
 client = create_discogs_client()
 
 
-def get_price_of_album(albums_price_request_item: AlbumsPriceRequestItem):
+@cache_response(ttl=864000, namespace="albums")
+async def get_price_of_album(albums_price_request_item: AlbumsPriceRequestItem):
     """
     This function returns the price of the album and a bool that reflects whether it was
     able to find the price for it or not
@@ -41,7 +39,7 @@ def get_price_of_album(albums_price_request_item: AlbumsPriceRequestItem):
     release = results[0]
 
     if not release:
-        return Decimal(0), False
+        return 0.0, False
 
     response = client._request(
         "GET", f"https://api.discogs.com/marketplace/price_suggestions/{release.id}"
@@ -51,12 +49,10 @@ def get_price_of_album(albums_price_request_item: AlbumsPriceRequestItem):
 
     response = price_suggestions.return_price_based_on_quality_vs_price()
 
-    print(f"{release} --> {price_suggestions}\n\n\n ")
-
     return response, True if response else False
 
 
-def get_price_of_albums(
+async def get_price_of_albums(
     albums_price_request: AlbumsPriceRequest,
 ) -> AlbumsPriceResponse:
     response = AlbumsPriceResponse(
@@ -64,7 +60,7 @@ def get_price_of_albums(
     )
 
     for album_request_item in albums_price_request.albums:
-        album_price, was_price_found = get_price_of_album(album_request_item)
+        album_price, was_price_found = await get_price_of_album(album_request_item)
         response.albums_with_price.append(
             AlbumsPriceResponseItem(
                 **album_request_item.__dict__, price=album_price, valid=was_price_found

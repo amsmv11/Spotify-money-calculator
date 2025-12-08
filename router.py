@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from gateways import spotify_gateway
 from gateways.app_values import AlbumsPriceRequest
-from gateways.discogs_gateway import get_price_of_albums
+from gateways import discogs_gateway
 
 router = APIRouter()
 
@@ -28,4 +28,9 @@ async def user_albums(request: Request, limit: int):
 
 @router.post("/get_albums_price")
 async def get_albums_price(albums_price_request: AlbumsPriceRequest):
-    return await get_price_of_albums(albums_price_request)
+    return await discogs_gateway.get_price_of_albums(albums_price_request)
+
+
+@router.get("/all_albums_price")
+async def get_all_ambums_price(request: Request):
+    return await discogs_gateway.get_all_ambums_price(request=request)

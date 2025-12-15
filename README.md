@@ -10,11 +10,14 @@ The project is now functional with core features implemented!
 
 ### What's Working:
 - ✅ Spotify OAuth authentication flow with cookie-based session management
-- ✅ FastAPI-based REST API
+- ✅ FastAPI-based REST API with WebSocket support
 - ✅ User saved albums retrieval with pagination support
 - ✅ **Discogs API integration for physical album pricing**
 - ✅ **Cost calculation engine for CD prices**
 - ✅ **Interactive web frontend with album display**
+- ✅ **Real-time album price calculation via WebSocket streaming**
+- ✅ **Redis-based caching for Discogs API responses**
+- ✅ **Docker and Docker Compose support**
 - ✅ Real-time price aggregation and summary
 
 ### What's Next:
@@ -31,8 +34,11 @@ The project is now functional with core features implemented!
 - **Validation**: [Pydantic](https://docs.pydantic.dev/) - Data validation and settings management
 - **Server**: [Uvicorn](https://www.uvicorn.org/) - Lightning-fast ASGI server
 - **Package Manager**: [uv](https://github.com/astral-sh/uv) - Fast Python package installer
-- **Pricing API**: [Discogs API](https://www.discogs.com/developers/) - Physical music marketplace data
+- **Pricing API**: [Discogs API](https://www.discogs.com/developers/) - Physical music marketplace data via [python3-discogs-client](https://github.com/joalla/discogs_client)
 - **Template Engine**: [Jinja2](https://jinja.palletsprojects.com/) - HTML templating
+- **Caching**: [Redis](https://redis.io/) via [aiocache](https://github.com/aio-libs/aiocache) - Fast response caching (10 day TTL)
+- **WebSockets**: Real-time streaming of album calculations
+- **Containerization**: [Docker](https://www.docker.com/) and Docker Compose for easy deployment
 
 ## 📋 Prerequisites
 
@@ -42,6 +48,8 @@ Before you begin, ensure you have the following installed:
 - **uv** package manager ([installation guide](https://github.com/astral-sh/uv))
 - **Spotify Developer Account** - Create one at [developer.spotify.com](https://developer.spotify.com/)
 - **Discogs Developer Account** - Create one at [discogs.com/developers](https://www.discogs.com/developers/)
+- **Redis** (optional, for caching) - Or use Docker Compose to run Redis automatically
+- **Docker & Docker Compose** (optional, for containerized deployment)
 
 ## 🚀 Installation
 
@@ -58,7 +66,7 @@ Before you begin, ensure you have the following installed:
 
 3. **Set up environment variables**
    
-   Create a `.env` file in the project root:
+   Create a `.env` file in the project root (see `.env.example` for reference):
    ```env
    SPOTIFY_CLIENT_ID=your_spotify_client_id
    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
@@ -66,6 +74,8 @@ Before you begin, ensure you have the following installed:
    SPOTIFY_STATE=your_random_state_string
    SPOTIFY_SCOPE=user-library-read
    DISCOGS_ACCESS_TOKEN=your_discogs_personal_access_token
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
    ```
 
 ## ⚙️ Configuration
@@ -87,20 +97,39 @@ Before you begin, ensure you have the following installed:
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `SPOTIFY_CLIENT_ID` | Your Spotify app client ID | Yes |
-| `SPOTIFY_CLIENT_SECRET` | Your Spotify app client secret | Yes |
-| `SPOTIFY_REDIRECT_URI` | OAuth callback URL | Yes |
-| `SPOTIFY_STATE` | Random string for OAuth state verification | Yes |
-| `SPOTIFY_SCOPE` | Spotify API scopes (e.g., `user-library-read`) | Yes |
-| `DISCOGS_ACCESS_TOKEN` | Your Discogs personal access token | Yes |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `SPOTIFY_CLIENT_ID` | Your Spotify app client ID | Yes | - |
+| `SPOTIFY_CLIENT_SECRET` | Your Spotify app client secret | Yes | - |
+| `SPOTIFY_REDIRECT_URI` | OAuth callback URL | Yes | - |
+| `SPOTIFY_STATE` | Random string for OAuth state verification | Yes | - |
+| `SPOTIFY_SCOPE` | Spotify API scopes (e.g., `user-library-read`) | Yes | - |
+| `DISCOGS_ACCESS_TOKEN` | Your Discogs personal access token | Yes | - |
+| `REDIS_HOST` | Redis server hostname | No | `localhost` |
+| `REDIS_PORT` | Redis server port | No | `6379` |
 
 ## 🎮 Usage
 
 ### Running the Application
 
-Start the development server:
+#### Option 1: Using Docker Compose (Recommended)
+Start the application with Redis using Docker:
+```bash
+make up
+```
+
+Stop the services:
+```bash
+make stop
+```
+
+Clean up containers and volumes:
+```bash
+make clean
+```
+
+#### Option 2: Local Development
+Start the development server (requires Redis running locally):
 ```bash
 make run
 ```
@@ -174,6 +203,43 @@ Calculates the cost of purchasing albums physically based on Discogs marketplace
 }
 ```
 
+#### Get All Albums with Prices
+```
+GET /api/v0/spotify/all_albums_price
+```
+Retrieves all authenticated user's saved albums with calculated prices.
+
+**Response**: Same format as the POST endpoint above, but includes all user's albums.
+
+#### Real-time Price Calculation (WebSocket)
+```
+WS /api/v0/spotify/ws/calculate_all_albums
+```
+Establishes a WebSocket connection for real-time streaming of album price calculations. This endpoint processes albums one by one and sends progress updates.
+
+**Message Types**:
+- `total`: Initial message with total album count
+- `album`: Individual album with calculated price and metadata
+- `complete`: Calculation finished
+- `error`: Error occurred during processing
+
+**Example Album Message**:
+```json
+{
+  "type": "album",
+  "index": 1,
+  "total": 150,
+  "album": {
+    "name": "Album Title",
+    "artist": "Artist Name",
+    "price": 12.50,
+    "valid": true,
+    "image": "https://...",
+    "release_date": "2023-01-01"
+  }
+}
+```
+
 ### Example Flow
 
 1. Start the server: `make run`
@@ -191,7 +257,13 @@ Calculates the cost of purchasing albums physically based on Discogs marketplace
 The project uses a Makefile for common development tasks:
 
 ```bash
-make run        # Run the application
+# Docker commands
+make up         # Start application with Docker Compose
+make stop       # Stop Docker Compose services
+make clean      # Remove containers, volumes, and images
+
+# Development commands
+make run        # Run the application locally with UV
 make format     # Format code with ruff
 make lint       # Run linter with auto-fix
 make check-lint # Check linting without fixes
@@ -245,16 +317,21 @@ Run `make check` before committing to ensure code quality.
 ```
 spotify_money_calculator/
 ├── main.py                      # Application entry point
-├── router.py                    # API routes
+├── router.py                    # API routes and WebSocket endpoints
 ├── pyproject.toml              # Project metadata and dependencies
 ├── Makefile                    # Development commands
+├── docker-compose.yml          # Docker Compose configuration
+├── Dockerfile                  # Docker container definition
 ├── .env                        # Environment variables (not in repo)
+├── .env.example                # Example environment variables
 ├── .gitignore                  # Git ignore rules
 ├── README.md                   # This file
 ├── gateways/                   # External API integrations
 │   ├── spotify_gateway.py      # Spotify API client and OAuth
 │   ├── discogs_gateway.py      # Discogs API client and pricing
 │   └── app_values.py           # Shared data models
+├── services/                   # Application services
+│   └── cache.py                # Redis caching service
 ├── values/                     # Pydantic models and settings
 │   ├── spotify_values.py       # Spotify data models
 │   └── discogs_values.py       # Discogs data models

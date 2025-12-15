@@ -29,6 +29,15 @@ services:
       - app-network
     command: redis-server --appendonly yes
 
+  soketi:
+    image: quay.io/soketi/soketi:latest-16-alpine
+    ports:
+      - "6001:6001"
+    env_file:
+      - .env
+    networks:
+      - app-network
+
 volumes:
   redis-data:
 

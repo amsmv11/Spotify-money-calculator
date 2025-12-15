@@ -38,6 +38,9 @@ async def get_price_of_album(artist: str, album_name: str):
         type="release",
     )
 
+    if not results:
+        return 0.0, False
+
     release = results[0]
 
     if not release:

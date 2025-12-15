@@ -109,6 +109,7 @@ async def callback(request: Request, code: str, state: str):
             httponly=True,
             secure=True,
             samesite="lax",
+            path="/",
         )
 
         html_response.set_cookie(
@@ -118,6 +119,7 @@ async def callback(request: Request, code: str, state: str):
             httponly=True,
             secure=True,
             samesite="lax",
+            path="/",
         )
 
         html_response.set_cookie(
@@ -127,6 +129,7 @@ async def callback(request: Request, code: str, state: str):
             httponly=True,
             secure=True,
             samesite="lax",
+            path="/",
         )
 
         return html_response

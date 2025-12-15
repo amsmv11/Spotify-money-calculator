@@ -196,3 +196,94 @@ async def get_user_saved_albums(
 
         except Exception:
             return login()
+
+
+async def get_all_albums_with_token(
+    access_token: str,
+) -> Optional[List[SpotifyAlbumListItem]]:
+    """
+    Get all user saved albums using an access token directly.
+    Used for WebSocket connections where cookies aren't available.
+    """
+    async with AsyncClient() as client:
+        try:
+            res = []
+            url = "https://api.spotify.com/v1/me/albums?limit=50"
+
+            while url != "":
+                response = await client.get(
+                    url=url,
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                    },
+                )
+
+                response.raise_for_status()
+                list_response = SpotifyAlbumListResponse(**response.json())
+                res += list_response.items
+                url = list_response.next if list_response.next else ""
+            return res
+
+        except Exception:
+            return None
+
+
+async def get_total_albums_count(access_token: str) -> Optional[int]:
+    """
+    Get the total count of user saved albums without fetching all items.
+    Makes a single request to get the total count from the API.
+    """
+    async with AsyncClient() as client:
+        try:
+            response = await client.get(
+                url="https://api.spotify.com/v1/me/albums?limit=1",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                },
+            )
+
+            response.raise_for_status()
+            list_response = SpotifyAlbumListResponse(**response.json())
+            return list_response.total
+
+        except Exception:
+            return None
+
+
+async def stream_albums_with_token(access_token: str):
+    """
+    Generator that streams user albums one by one without loading all into memory.
+    Yields (album_item, current_index, total_count) tuples.
+    """
+    async with AsyncClient() as client:
+        try:
+            url = "https://api.spotify.com/v1/me/albums?limit=50"
+            total_count = None
+            current_index = 0
+
+            while url:
+                response = await client.get(
+                    url=url,
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                    },
+                )
+
+                response.raise_for_status()
+                list_response = SpotifyAlbumListResponse(**response.json())
+
+                # Get total count on first request
+                if total_count is None:
+                    total_count = list_response.total
+
+                # Yield each album item
+                for item in list_response.items:
+                    current_index += 1
+                    yield item, current_index, total_count
+
+                # Get next page URL
+                url = list_response.next if list_response.next else ""
+
+        except Exception as e:
+            print(f"Error streaming albums: {str(e)}")
+            return

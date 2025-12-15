@@ -269,6 +269,163 @@
             padding: 20px;
         }
 
+        .calculate-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .calculate-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .calculate-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .all-albums-table-container {
+            display: none;
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .all-albums-table-container.active {
+            display: block;
+        }
+
+        .all-albums-table-container h3 {
+            color: #2d3748;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .progress-info {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+
+        .table-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .albums-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .albums-table thead {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            z-index: 10;
+        }
+
+        .albums-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 1em;
+        }
+
+        .albums-table th:last-child {
+            text-align: right;
+        }
+
+        .albums-table tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s;
+        }
+
+        .albums-table tbody tr:hover {
+            background-color: #f7fafc;
+        }
+
+        .albums-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .albums-table td {
+            padding: 12px 15px;
+        }
+
+        .albums-table .rank-cell {
+            font-weight: 700;
+            color: #667eea;
+            width: 50px;
+        }
+
+        .albums-table .cover-cell {
+            width: 60px;
+            padding: 8px;
+        }
+
+        .albums-table .album-cover {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            object-fit: cover;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .albums-table .album-info-cell {
+            min-width: 200px;
+        }
+
+        .albums-table .album-name-cell {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .albums-table .artist-cell {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .albums-table .price-cell {
+            text-align: right;
+            font-weight: 700;
+            color: #1db954;
+        }
+
+        .albums-table .price-not-found-cell {
+            color: #718096;
+            font-style: italic;
+        }
+
+        .total-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.3em;
+            font-weight: 800;
+        }
+
         .footer {
             margin-top: 30px;
             color: #a0aec0;
@@ -360,6 +517,35 @@
         <div id="price-summary-section" class="price-summary" style="display: none;">
             <h3>💰 Physical Albums Cost Summary</h3>
             <div class="loading">Calculating prices...</div>
+        </div>
+
+        <div style="text-align: center;">
+            <button id="calculate-all-button" class="calculate-button">
+                Calculate the Price of All Albums
+            </button>
+        </div>
+
+        <div id="all-albums-table-container" class="all-albums-table-container">
+            <h3>💿 All Albums Sorted by Price</h3>
+            <div id="progress-info" class="progress-info"></div>
+            <div class="table-wrapper">
+                <table class="albums-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Cover</th>
+                            <th>Album & Artist</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-albums-tbody">
+                    </tbody>
+                </table>
+            </div>
+            <div id="total-summary" class="total-summary" style="display: none;">
+                <span>Total Cost</span>
+                <span id="total-price">€0.00</span>
+            </div>
         </div>
 
         <div class="footer">
@@ -536,6 +722,159 @@
         
         // Load albums when page loads
         window.addEventListener('DOMContentLoaded', fetchUserAlbums);
+
+        // WebSocket functionality for calculating all albums
+        let allAlbumsData = [];
+        let totalCost = 0;
+
+        document.getElementById('calculate-all-button').addEventListener('click', function() {
+            const button = this;
+            const tableContainer = document.getElementById('all-albums-table-container');
+            const progressInfo = document.getElementById('progress-info');
+            const tbody = document.getElementById('all-albums-tbody');
+            const totalSummary = document.getElementById('total-summary');
+            const totalPriceElement = document.getElementById('total-price');
+
+            // Disable button
+            button.disabled = true;
+            button.textContent = 'Calculating...';
+
+            // Reset state
+            allAlbumsData = [];
+            totalCost = 0;
+            tbody.innerHTML = '';
+            totalSummary.style.display = 'none';
+
+            // Show table container
+            tableContainer.classList.add('active');
+            progressInfo.textContent = 'Connecting...';
+
+            // Create WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/v0/spotify/ws/calculate_all_albums`;
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                progressInfo.textContent = 'Connected! Fetching albums...';
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+
+                if (data.error) {
+                    progressInfo.textContent = `Error: ${data.error}`;
+                    button.disabled = false;
+                    button.textContent = 'Calculate the Price of All Albums';
+                    return;
+                }
+
+                if (data.type === 'total') {
+                    progressInfo.textContent = `Found ${data.total_albums} albums. Calculating prices...`;
+                } else if (data.type === 'album') {
+                    progressInfo.textContent = `Processing album ${data.index} of ${data.total}...`;
+
+                    // Add album to array
+                    allAlbumsData.push(data.album);
+
+                    // Update total if price is valid
+                    if (data.album.valid) {
+                        totalCost += data.album.price;
+                    }
+
+                    // Sort albums by price (descending)
+                    allAlbumsData.sort((a, b) => {
+                        if (!a.valid) return 1;
+                        if (!b.valid) return -1;
+                        return b.price - a.price;
+                    });
+
+                    // Re-render table
+                    renderAlbumsTable();
+
+                    // Update total
+                    totalPriceElement.textContent = `€${totalCost.toFixed(2)}`;
+                    totalSummary.style.display = 'flex';
+
+                } else if (data.type === 'complete') {
+                    progressInfo.textContent = `Complete! Processed ${allAlbumsData.length} albums.`;
+                    button.disabled = false;
+                    button.textContent = 'Calculate the Price of All Albums';
+                } else if (data.type === 'error') {
+                    console.error('Error:', data.message);
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                progressInfo.textContent = 'Connection error. Please try again.';
+                button.disabled = false;
+                button.textContent = 'Calculate the Price of All Albums';
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket connection closed');
+                if (button.disabled) {
+                    button.disabled = false;
+                    button.textContent = 'Calculate the Price of All Albums';
+                }
+            };
+        });
+
+        function renderAlbumsTable() {
+            const tbody = document.getElementById('all-albums-tbody');
+            tbody.innerHTML = '';
+
+            allAlbumsData.forEach((album, index) => {
+                const row = document.createElement('tr');
+
+                // Rank cell
+                const rankCell = document.createElement('td');
+                rankCell.className = 'rank-cell';
+                rankCell.textContent = index + 1;
+
+                // Cover cell with image
+                const coverCell = document.createElement('td');
+                coverCell.className = 'cover-cell';
+                const coverImg = document.createElement('img');
+                coverImg.className = 'album-cover';
+                coverImg.src = album.image || 'https://via.placeholder.com/50?text=No+Image';
+                coverImg.alt = album.name;
+                coverImg.loading = 'lazy';
+                coverCell.appendChild(coverImg);
+
+                // Album & Artist info cell
+                const infoCell = document.createElement('td');
+                infoCell.className = 'album-info-cell';
+
+                const albumNameDiv = document.createElement('div');
+                albumNameDiv.className = 'album-name-cell';
+                albumNameDiv.textContent = album.name;
+
+                const artistDiv = document.createElement('div');
+                artistDiv.className = 'artist-cell';
+                artistDiv.textContent = album.artist;
+
+                infoCell.appendChild(albumNameDiv);
+                infoCell.appendChild(artistDiv);
+
+                // Price cell
+                const priceCell = document.createElement('td');
+                if (album.valid) {
+                    priceCell.className = 'price-cell';
+                    priceCell.textContent = `€${album.price.toFixed(2)}`;
+                } else {
+                    priceCell.className = 'price-not-found-cell';
+                    priceCell.textContent = 'Not found';
+                }
+
+                row.appendChild(rankCell);
+                row.appendChild(coverCell);
+                row.appendChild(infoCell);
+                row.appendChild(priceCell);
+
+                tbody.appendChild(row);
+            });
+        }
     </script>
 </body>
 </html>
